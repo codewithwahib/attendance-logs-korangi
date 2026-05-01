@@ -11,6 +11,7 @@ const Navbar = () => {
   const [showServices, setShowServices] = useState(false);
   const [showQuoteForm, setShowQuoteForm] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showMobileServices, setShowMobileServices] = useState(false); // State for mobile services dropdown
   const [services, setServices] = useState([]);
 
   useEffect(() => {
@@ -46,6 +47,13 @@ const Navbar = () => {
     };
   }, [scrolled]);
 
+  // Close mobile services dropdown when mobile menu closes
+  useEffect(() => {
+    if (!showMobileMenu) {
+      setShowMobileServices(false);
+    }
+  }, [showMobileMenu]);
+
   return (
     <>
       <nav className={`bg-white text-gray-900 px-6 shadow-sm sticky top-0 z-50 transition-all duration-300 ${
@@ -79,7 +87,7 @@ const Navbar = () => {
               <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-gray-900 transition-all duration-200 group-hover:w-full"></span>
             </Link>
 
-            {/* Services Dropdown */}
+            {/* Services Dropdown - Desktop */}
             <div 
               className="relative"
               onMouseEnter={() => setShowServices(true)}
@@ -106,7 +114,7 @@ const Navbar = () => {
                 <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-gray-900 transition-all duration-200 group-hover:w-full"></span>
               </Link>
               
-              {/* Dropdown Menu */}
+              {/* Dropdown Menu - Desktop */}
               <div 
                 className="absolute top-full left-0 pt-2 w-64"
                 onMouseEnter={() => setShowServices(true)}
@@ -213,13 +221,57 @@ const Navbar = () => {
                   HOME
                 </Link>
 
-                <Link
-                  href="/services"
-                  className="block text-black hover:text-gray-900 transition-colors duration-200 font-medium text-sm"
-                  onClick={() => setShowMobileMenu(false)}
-                >
-                  SERVICES
-                </Link>
+                {/* Mobile Services Dropdown - Click to toggle with linkable SERVICES button */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Link
+                      href="/services"
+                      className="flex-1 text-black hover:text-gray-900 transition-colors duration-200 font-medium text-sm"
+                      onClick={() => setShowMobileMenu(false)}
+                    >
+                      SERVICES
+                    </Link>
+                    <button
+                      onClick={() => setShowMobileServices(!showMobileServices)}
+                      className="p-2 text-black hover:text-gray-900 transition-colors duration-200"
+                      aria-label="Toggle services menu"
+                    >
+                      <svg 
+                        className={`w-4 h-4 transition-transform duration-200 ${showMobileServices ? 'rotate-180' : ''}`}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M19 9l-7 7-7-7" 
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  {/* Mobile Services Dropdown Menu - With bullets instead of lines */}
+                  {showMobileServices && (
+                    <div className="pl-4 space-y-2">
+                      {services.map((service: any, index: number) => (
+                        <Link
+                          key={index}
+                          href={`/services/${service.slug}`}
+                          className="flex items-center gap-2 py-2 text-sm text-gray-600 hover:text-black transition-colors duration-200"
+                          onClick={() => {
+                            setShowMobileMenu(false);
+                            setShowMobileServices(false);
+                          }}
+                        >
+                          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+                          {service.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 <Link
                   href="/about"

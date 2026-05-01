@@ -5,7 +5,7 @@ import { client } from '@/sanity/lib/client';
 import { groq } from 'next-sanity';
 import Image from "next/image";
 
-// Fetch services from Sanity
+// Fetch services from Sanity with error handling
 async function getServices() {
   const servicesQuery = groq`
     *[_type == "service"] | order(_createdAt asc) {
@@ -17,8 +17,15 @@ async function getServices() {
     }
   `;
   
-  const services = await client.fetch(servicesQuery);
-  return services;
+  try {
+    const services = await client.fetch(servicesQuery, {}, {
+      next: { revalidate: 3600 } // Revalidate every hour
+    });
+    return services;
+  } catch (error) {
+    console.error("Error fetching services from Sanity:", error);
+    return []; // Return empty array on error
+  }
 }
 
 const Services = async () => {
