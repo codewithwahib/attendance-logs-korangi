@@ -94,7 +94,7 @@ export default function ContactPage() {
                   <Phone className="text-gray-500" size={18} />
                   <div>
                     <p className="font-medium text-gray-900">Phone</p>
-                    <p className="text-gray-600 text-sm">+92 (342) 3415018</p>
+                    <p className="text-gray-600 text-sm">+92 (325) 3024092</p>
                   </div>
                 </div>
                 
