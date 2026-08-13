@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import Footer from '@/app/components/footer'
+import Footer from '@/app/Components/footer'
 import NavbarDropdown from '@/app/Navbar/page'
 import ProtectedEmployeeRoute from '@/components/ProtectedEmployeeRoute'
 import { useParams, useRouter } from 'next/navigation'

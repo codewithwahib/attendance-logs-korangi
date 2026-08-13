@@ -863,7 +863,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
-import Footer from '@/app/components/footer'
+import Footer from '@/app/Components/footer'
 import ProtectedEmployeeRoute from '@/components/ProtectedEmployeeRoute'
 import { client } from '@/sanity/lib/client'
 import NavbarDropdown from '@/app/Navbar/page'

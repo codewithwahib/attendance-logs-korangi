@@ -1150,7 +1150,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import Footer from '@/app/components/footer'
+import Footer from '@/app/Components/footer'
 import NavbarDropdown from '@/app/Navbar/page'
 import ProtectedEmployeeRoute from '@/components/ProtectedEmployeeRoute'
 import { client } from '@/sanity/lib/client'
