@@ -1769,7 +1769,7 @@ export default function HRDashboardPage() {
           <div className="shadow-sm p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-gray-800 tracking-wide">Monthly Attendance</h3>
-              <div className="flex items-center gap-2 text-[10px]">
+              <div className="flex text-black items-center gap-2 text-[10px]">
                 <span className="flex items-center gap-1 tracking-wide">
                   <span className="w-1.5 h-1.5 bg-green-500 rounded"></span>
                   Present

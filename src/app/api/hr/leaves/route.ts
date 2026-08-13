@@ -1,7 +1,7 @@
 // app/api/hr/leaves/route.ts
 
 import { NextRequest, NextResponse } from 'next/server'
-import { serverClient } from '@/sanity/lib/client'
+import { client } from '@/sanity/lib/client'
 
 // =====================================================
 // GET - Fetch all leaves
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       }
     `
 
-    const employees = await serverClient.fetch(query)
+    const employees = await client.fetch(query)
 
     let allLeaves: any[] = []
 
@@ -245,7 +245,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Fetch employee
-    const employee = await serverClient.fetch(
+    const employee = await client.fetch(
       `
         *[_type == "employee" && _id == $employeeId][0] {
           _id,
@@ -311,8 +311,8 @@ export async function PUT(request: NextRequest) {
       updatedOn: new Date().toISOString()
     }
 
-    // Save
-    await serverClient
+    // Save - Use the client with token
+    await client
       .patch(employeeId)
       .set({
         leaves: updatedLeaves
@@ -389,7 +389,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Fetch employee
-    const employee = await serverClient.fetch(
+    const employee = await client.fetch(
       `
         *[_type == "employee" && _id == $employeeId][0] {
           _id,
@@ -438,7 +438,8 @@ export async function DELETE(request: NextRequest) {
         leave?._key !== leaveKey
     )
 
-    await serverClient
+    // Save - Use the client with token
+    await client
       .patch(employeeId)
       .set({
         leaves: updatedLeaves

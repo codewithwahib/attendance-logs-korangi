@@ -1968,9 +1968,9 @@ export default function EmployeeDashboardPage() {
                 Showing daily attendance status (Present ≥ 5hrs | Half Day &lt; 5hrs | Absent 0hrs)
               </p>
             </div>
-            <div className="flex items-center gap-3 text-[10px]">
+            <div className="flex text-black items-center gap-3 text-[10px]">
               <span className="flex items-center gap-1 tracking-wide">
-                <span className="w-3 h-3 bg-blue-500 rounded"></span>
+                <span className="w-3  h-3 bg-blue-500 rounded"></span>
                 Present
               </span>
               <span className="flex items-center gap-1 tracking-wide">

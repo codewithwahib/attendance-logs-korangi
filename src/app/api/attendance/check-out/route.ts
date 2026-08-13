@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { serverClient } from '@/sanity/lib/client'
+import { client } from '@/sanity/lib/client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Find employee
-    const employee = await serverClient.fetch(
+    const employee = await client.fetch(
       `*[
         _type == "employee" &&
         personalDetails.employeeId == $employeeId
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     console.log(checkOutRecord)
 
     // Save to Sanity
-    const updatedEmployee = await serverClient
+    const updatedEmployee = await client
       .patch(employee._id)
       .setIfMissing({
         checkOut: [],
@@ -94,7 +94,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Check-out saved successfully',
-
       data: {
         employeeId,
         employeeDocumentId: employee._id,

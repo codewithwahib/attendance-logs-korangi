@@ -111,6 +111,9 @@ export default function NavbarDropdown() {
   const attendanceRef = useRef<HTMLDivElement>(null)
   const leavesRef = useRef<HTMLDivElement>(null)
 
+  // Logout Modal State
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
+
   // Get employeeId from localStorage or URL
   useEffect(() => {
     const storedEmployeeId = localStorage.getItem('employeeId')
@@ -536,34 +539,52 @@ export default function NavbarDropdown() {
     }
   }
 
-  // Updated Logout Handler with Confirmation
-  const handleLogout = () => {
+  // Updated Logout Handler with Custom Modal
+  const handleLogoutClick = () => {
     // Close dropdowns
     setIsProfileDropdownOpen(false)
     setIsMobileMenuOpen(false)
+    setIsNotificationOpen(false)
     
-    // Show confirmation dialog
-    if (window.confirm('Are you sure you want to logout?')) {
-      // Clear all localStorage items
-      localStorage.removeItem('employeeData')
-      localStorage.removeItem('employeeLogin')
-      localStorage.removeItem('employeeId')
-      localStorage.removeItem('notifications')
-      localStorage.removeItem('hrms_user')
-      
-      // Clear session storage if any
-      sessionStorage.clear()
-      
-      // Close notification dropdown if open
-      setIsNotificationOpen(false)
-      
-      // Redirect to main page (login page)
-      router.push('/')
-      
-      // Optional: Show logout success message
-      // You can add a toast notification here if you have one
-    }
+    // Show custom logout modal
+    setShowLogoutModal(true)
   }
+
+  // Confirm Logout
+  const confirmLogout = () => {
+    // Close modal
+    setShowLogoutModal(false)
+    
+    // Clear all localStorage items
+    localStorage.removeItem('employeeData')
+    localStorage.removeItem('employeeLogin')
+    localStorage.removeItem('employeeId')
+    localStorage.removeItem('notifications')
+    localStorage.removeItem('hrms_user')
+    localStorage.removeItem('userRole')
+    
+    // Clear session storage if any
+    sessionStorage.clear()
+    
+    // Redirect to main page (login page)
+    router.push('/')
+  }
+
+  // Cancel Logout
+  const cancelLogout = () => {
+    setShowLogoutModal(false)
+  }
+
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showLogoutModal) {
+        setShowLogoutModal(false)
+      }
+    }
+    document.addEventListener('keydown', handleEsc)
+    return () => document.removeEventListener('keydown', handleEsc)
+  }, [showLogoutModal])
 
   return (
     <>
@@ -885,9 +906,9 @@ export default function NavbarDropdown() {
                   
                   <hr className="my-1 border-gray-200" />
                   
-                  {/* Updated Logout Button with Confirmation */}
+                  {/* Updated Logout Button with Custom Modal */}
                   <button
-                    onClick={handleLogout}
+                    onClick={handleLogoutClick}
                     className={`flex items-center gap-3 px-4 py-2 hover:bg-red-100 transition text-sm text-red-600 w-full ${roboto.className} tracking-wide`}
                   >
                     <LogOut className="w-4 h-4" />
@@ -1034,9 +1055,9 @@ export default function NavbarDropdown() {
                   {displayDesignation}
                 </p>
               </div>
-              {/* Updated Mobile Logout Button with Confirmation */}
+              {/* Updated Mobile Logout Button with Custom Modal */}
               <button
-                onClick={handleLogout}
+                onClick={handleLogoutClick}
                 className="p-2 hover:bg-gray-200 rounded-lg transition text-gray-400 hover:text-red-600"
                 title="Logout"
               >
@@ -1057,6 +1078,90 @@ export default function NavbarDropdown() {
       {/* Spacer for fixed navbar */}
       <div className="h-16"></div>
       </ProtectedEmployeeRoute>
+
+      {/* Custom Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
+            onClick={cancelLogout}
+          ></div>
+          
+          {/* Modal */}
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 mx-4 animate-scale-up">
+            {/* Header */}
+            <div className="flex items-center gap-4 mb-4">
+              <div>
+                <h3 className={`text-xl font-bold text-gray-900 ${roboto.className} tracking-wide`}>
+                  Confirm Logout
+                </h3>
+                <p className={`text-sm text-gray-500 ${roboto.className} tracking-wide mt-0.5`}>
+                  Are you sure you want to logout?
+                </p>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="mb-6">
+              <p className={`text-sm text-gray-600 ${roboto.className} tracking-wide`}>
+                You will be redirected to the login page and will need to sign in again to access your account.
+              </p>
+              
+              {/* User Info */}
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center text-white flex-shrink-0">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className={`text-sm font-medium text-gray-800 ${roboto.className} tracking-wide`}>
+                      {displayName}
+                    </p>
+                    <p className={`text-xs text-gray-500 ${roboto.className} tracking-wide`}>
+                      {displayDesignation}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={cancelLogout}
+                className={`flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 hover:bg-gray-100 rounded-lg transition font-medium ${roboto.className} tracking-wide`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmLogout}
+                className={`flex-1 px-4 py-2.5 bg-red-600 text-white hover:bg-red-700 rounded-lg transition font-medium flex items-center justify-center gap-2 ${roboto.className} tracking-wide`}
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add custom animation */}
+      <style jsx global>{`
+        @keyframes scaleUp {
+          from {
+            opacity: 0;
+            transform: scale(0.95) translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+        .animate-scale-up {
+          animation: scaleUp 0.2s ease-out forwards;
+        }
+      `}</style>
     </>
   )
 }
