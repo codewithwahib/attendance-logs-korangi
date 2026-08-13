@@ -1,6 +1,6 @@
 // app/api/hr/add-employee/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { serverClient } from '@/sanity/lib/client'
+import { client } from '@/sanity/lib/client' // Changed from serverClient to client
 
 export async function POST(request: NextRequest) {
   try {
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if employee with same ID or CNIC already exists
-    const existingEmployee = await serverClient.fetch(
+    const existingEmployee = await client.fetch( // Changed from serverClient to client
       `*[_type == "employee" && (personalDetails.employeeId == $employeeId || personalDetails.cnicNumber == $cnicNumber)][0]`,
       {
         employeeId: personalDetails.employeeId,
@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if username already exists
-    const existingUsername = await serverClient.fetch(
+    const existingUsername = await client.fetch( // Changed from serverClient to client
       `*[_type == "employee" && username == $username][0]`,
       { username }
     )
@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
     console.log('Creating employee:', newEmployee)
 
     // Save to Sanity
-    const result = await serverClient.create(newEmployee)
+    const result = await client.create(newEmployee) // Changed from serverClient to client
 
     console.log('Employee created successfully:', result)
 

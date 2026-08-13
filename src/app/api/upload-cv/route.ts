@@ -1,6 +1,6 @@
 // app/api/upload-cv/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { serverClient } from '@/sanity/lib/client'
+import { client } from '@/sanity/lib/client' // Changed from serverClient to client
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer())
     
     // Upload to Sanity
-    const asset = await serverClient.assets.upload('file', buffer, {
+    const asset = await client.assets.upload('file', buffer, { // Changed from serverClient to client
       filename: file.name,
       contentType: file.type
     })

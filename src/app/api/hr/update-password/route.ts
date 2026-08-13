@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { client, serverClient } from '@/sanity/lib/client'
+import { client } from '@/sanity/lib/client' // Removed serverClient, only using client
 
 export async function GET() {
   try {
@@ -79,7 +79,8 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const currentLogin = await serverClient.fetch(
+    // Check if the login document exists
+    const currentLogin = await client.fetch( // Changed from serverClient to client
       `*[_type == "login" && _id == $id][0]{
         _id,
         username
@@ -99,11 +100,12 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const updatedLogin = await serverClient
+    // Update the login document
+    const updatedLogin = await client // Changed from serverClient to client
       .patch(adminId)
       .set({
         username: username || currentLogin.username,
-        password: newPassword,
+        password: newPassword, // Note: Consider hashing this password
       })
       .commit()
 
@@ -127,4 +129,3 @@ export async function PUT(request: NextRequest) {
     )
   }
 }
-

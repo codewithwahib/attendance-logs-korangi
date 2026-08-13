@@ -1,6 +1,6 @@
 // app/api/hr/employees/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { serverClient } from '@/sanity/lib/client'
+import { client } from '@/sanity/lib/client' // Changed from serverClient to client
 
 // GET - Fetch single employee (optional)
 export async function GET(
@@ -23,7 +23,7 @@ export async function GET(
       _updatedAt
     }`
     
-    const employee = await serverClient.fetch(query, { id })
+    const employee = await client.fetch(query, { id }) // Changed from serverClient to client
 
     if (!employee) {
       return NextResponse.json(
@@ -89,7 +89,7 @@ export async function PUT(
     }
 
     // Check if employee exists
-    const existingEmployee = await serverClient.fetch(
+    const existingEmployee = await client.fetch( // Changed from serverClient to client
       `*[_type == "employee" && _id == $id][0]`,
       { id }
     )
@@ -102,7 +102,7 @@ export async function PUT(
     }
 
     // Check if employee with same ID or CNIC exists (excluding current)
-    const duplicateCheck = await serverClient.fetch(
+    const duplicateCheck = await client.fetch( // Changed from serverClient to client
       `*[_type == "employee" && _id != $id && (personalDetails.employeeId == $employeeId || personalDetails.cnic == $cnic)][0]`,
       {
         id,
@@ -119,7 +119,7 @@ export async function PUT(
     }
 
     // Update the employee
-    const updatedEmployee = await serverClient
+    const updatedEmployee = await client // Changed from serverClient to client
       .patch(id)
       .set({
         'personalDetails': {
@@ -171,7 +171,7 @@ export async function DELETE(
     const { id } = params
 
     // Check if employee exists
-    const existingEmployee = await serverClient.fetch(
+    const existingEmployee = await client.fetch( // Changed from serverClient to client
       `*[_type == "employee" && _id == $id][0]`,
       { id }
     )
@@ -184,7 +184,7 @@ export async function DELETE(
     }
 
     // Delete the employee
-    await serverClient.delete(id)
+    await client.delete(id) // Changed from serverClient to client
 
     console.log('Employee deleted successfully:', id)
 

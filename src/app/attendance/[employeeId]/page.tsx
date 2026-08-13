@@ -152,7 +152,7 @@ export default function AttendancePage() {
   }, [employeeId])
 
   // =====================================================
-  // fetchEmployeeData - useCallback
+  // fetchEmployeeData - useCallback WITH dependencies
   // =====================================================
 
   const fetchEmployeeData = useCallback(async () => {
@@ -238,7 +238,7 @@ export default function AttendancePage() {
     } finally {
       setFetchingEmployee(false)
     }
-  }, [employeeId])
+  }, [employeeId, todaysCheckIn, todaysCheckOut]) // Added todaysCheckIn and todaysCheckOut
 
   // =====================================================
   // useEffect - fetchEmployeeData

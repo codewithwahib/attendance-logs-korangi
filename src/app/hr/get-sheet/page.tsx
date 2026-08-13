@@ -1259,7 +1259,179 @@ export default function GetSheetPage() {
   const [selectedEmployeeData, setSelectedEmployeeData] = useState<Employee | null>(null)
 
   // =====================================================
-  // fetchEmployees - useCallback
+  // Helper Functions - Moved BEFORE useCallback dependencies
+  // =====================================================
+
+  const getDayName = useCallback((dateStr: string) => {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('en-US', { weekday: 'long' })
+  }, [])
+
+  const formatTime = useCallback((timestamp: string) => {
+    if (!timestamp) return '-'
+    try {
+      const date = new Date(timestamp)
+      return date.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true 
+      })
+    } catch {
+      return '-'
+    }
+  }, [])
+
+  const formatDate = useCallback((dateStr: string) => {
+    if (!dateStr) return '-'
+    try {
+      const date = new Date(dateStr)
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      })
+    } catch {
+      return '-'
+    }
+  }, [])
+
+  const calculateTotalHours = useCallback((checkIn: string, checkOut: string) => {
+    if (!checkIn || !checkOut) return '-'
+    try {
+      const inTime = new Date(checkIn)
+      const outTime = new Date(checkOut)
+      const diffMs = outTime.getTime() - inTime.getTime()
+      
+      if (diffMs < 0) return '-'
+      
+      const totalSeconds = Math.floor(diffMs / 1000)
+      const hours = Math.floor(totalSeconds / 3600)
+      const minutes = Math.floor((totalSeconds % 3600) / 60)
+      const seconds = totalSeconds % 60
+      
+      const formattedHours = String(hours).padStart(2, '0')
+      const formattedMinutes = String(minutes).padStart(2, '0')
+      const formattedSeconds = String(seconds).padStart(2, '0')
+      
+      return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`
+    } catch {
+      return '-'
+    }
+  }, [])
+
+  const getQualificationsString = useCallback((qualifications: any[] = []) => {
+    if (!qualifications || qualifications.length === 0) return '-'
+    return qualifications.map(q => 
+      `${q.educationType} (${q.institute}, ${q.year}) - ${q.grade}`
+    ).join('; ')
+  }, [])
+
+  const getExperienceString = useCallback((experience: any[] = []) => {
+    if (!experience || experience.length === 0) return '-'
+    return experience.map(exp => 
+      `${exp.position} at ${exp.companyName} (${exp.experience} years)`
+    ).join('; ')
+  }, [])
+
+  const isValidCoordinate = useCallback((location: string): boolean => {
+    if (!location || location === '-') return false
+    const parts = location.split(',').map(s => s.trim())
+    if (parts.length !== 2) return false
+    const lat = parseFloat(parts[0])
+    const lng = parseFloat(parts[1])
+    return !isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180
+  }, [])
+
+  const parseCoordinates = useCallback((location: string): { lat: number; lng: number } | null => {
+    if (!location || location === '-') return null
+    const parts = location.split(',').map(s => s.trim())
+    if (parts.length !== 2) return null
+    const lat = parseFloat(parts[0])
+    const lng = parseFloat(parts[1])
+    if (isNaN(lat) || isNaN(lng)) return null
+    return { lat, lng }
+  }, [])
+
+  const openGoogleMaps = useCallback((location: string) => {
+    const coords = parseCoordinates(location)
+    if (!coords) {
+      const searchQuery = encodeURIComponent(location)
+      window.open(`https://www.google.com/maps/search/?api=1&query=${searchQuery}`, '_blank')
+      return
+    }
+    window.open(`https://www.google.com/maps?q=${coords.lat},${coords.lng}`, '_blank')
+  }, [parseCoordinates])
+
+  // =====================================================
+  // getEmployeeAttendance - Defined BEFORE it's used
+  // =====================================================
+
+  const getEmployeeAttendance = useCallback((employee: Employee, date: string): AttendanceRecord => {
+    const dateStr = date
+    const checkIn = employee.checkIn?.find(c => c.time.split('T')[0] === dateStr)
+    const checkOut = employee.checkOut?.find(c => c.time.split('T')[0] === dateStr)
+    
+    const leave = employee.leaves?.find(
+      l => l.fromDate <= dateStr && l.toDate >= dateStr && l.status === 'approved'
+    )
+
+    let status: 'Present' | 'Absent' | 'Leave' | 'Half Day' = 'Absent'
+    let leaveType = ''
+    let leaveReason = ''
+
+    if (leave) {
+      status = 'Leave'
+      leaveType = leave.leaveType || ''
+      leaveReason = leave.reason || ''
+    } else if (checkIn && checkOut) {
+      status = 'Present'
+    } else if (checkIn && !checkOut) {
+      status = 'Half Day'
+    }
+
+    const personal = employee.personalDetails
+
+    return {
+      employeeId: personal?.employeeId || '',
+      name: personal?.fullName || '',
+      fatherName: personal?.fatherName || '-',
+      cnic: personal?.cnic || '-',
+      phoneNumber: personal?.phoneNumber || '-',
+      emergencyContact: personal?.emergencyContact || '-',
+      dob: formatDate(personal?.dob || ''),
+      maritalStatus: personal?.maritalStatus || '-',
+      address: personal?.address || '-',
+      department: personal?.department || '',
+      designation: personal?.position || '',
+      joiningDate: formatDate(personal?.joiningDate || ''),
+      date: dateStr,
+      day: getDayName(dateStr),
+      checkIn: checkIn ? formatTime(checkIn.time) : '-',
+      checkOut: checkOut ? formatTime(checkOut.time) : '-',
+      totalHours: calculateTotalHours(checkIn?.time || '', checkOut?.time || ''),
+      checkInLocation: checkIn?.location || '-',
+      checkOutLocation: checkOut?.location || '-',
+      status,
+      leaveType,
+      leaveReason,
+      qualifications: getQualificationsString(employee.qualifications),
+      experience: getExperienceString(employee.experience)
+    }
+  }, [formatDate, getDayName, formatTime, calculateTotalHours, getQualificationsString, getExperienceString])
+
+  // =====================================================
+  // getSelectedEmployeeName - Defined BEFORE it's used
+  // =====================================================
+
+  const getSelectedEmployeeName = useCallback(() => {
+    if (selectedEmployee === 'all') return 'All Employees'
+    const emp = employees.find(e => e.personalDetails?.employeeId === selectedEmployee)
+    return emp?.personalDetails?.fullName || 'Selected Employee'
+  }, [employees, selectedEmployee])
+
+  // =====================================================
+  // fetchEmployees - useCallback with proper dependencies
   // =====================================================
 
   const fetchEmployees = useCallback(async () => {
@@ -1324,7 +1496,6 @@ export default function GetSheetPage() {
         return
       }
 
-      // Extract departments
       const depts = data
         .map((emp: any) => emp.personalDetails?.department)
         .filter(Boolean) as string[]
@@ -1346,10 +1517,10 @@ export default function GetSheetPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, []) // No dependencies needed
 
   // =====================================================
-  // generateAttendanceSheet - useCallback
+  // generateAttendanceSheet - WITH getEmployeeAttendance dependency
   // =====================================================
 
   const generateAttendanceSheet = useCallback(() => {
@@ -1359,7 +1530,6 @@ export default function GetSheetPage() {
     const endDate = new Date(toDate)
     const dateArray: string[] = []
 
-    // Generate all dates in range
     const currentDate = new Date(startDate)
     while (currentDate <= endDate) {
       dateArray.push(currentDate.toISOString().split('T')[0])
@@ -1368,7 +1538,6 @@ export default function GetSheetPage() {
 
     let allRecords: AttendanceRecord[] = []
 
-    // Filter employees by department and employee
     let filteredEmployees = employees
     if (selectedDepartment !== 'all') {
       filteredEmployees = filteredEmployees.filter(
@@ -1381,7 +1550,6 @@ export default function GetSheetPage() {
       )
     }
 
-    // Generate attendance for each employee for each date
     filteredEmployees.forEach(employee => {
       dateArray.forEach(date => {
         const record = getEmployeeAttendance(employee, date)
@@ -1391,145 +1559,12 @@ export default function GetSheetPage() {
 
     setAttendanceData(allRecords)
     setFilteredData(allRecords)
-  }, [employees, fromDate, toDate, selectedDepartment, selectedEmployee])
+  }, [employees, fromDate, toDate, selectedDepartment, selectedEmployee, getEmployeeAttendance]) // Added getEmployeeAttendance
 
   // =====================================================
-  // USE EFFECT - fetchEmployees dependency add karo
+  // LocationDisplay - WITH proper dependencies
   // =====================================================
 
-  useEffect(() => {
-    fetchEmployees()
-    // Set default dates to current month
-    const now = new Date()
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-    setFromDate(firstDay.toISOString().split('T')[0])
-    setToDate(lastDay.toISOString().split('T')[0])
-  }, [fetchEmployees])
-
-  // =====================================================
-  // USE EFFECT - generateAttendanceSheet dependency add karo
-  // =====================================================
-
-  useEffect(() => {
-    if (employees.length > 0 && fromDate && toDate) {
-      generateAttendanceSheet()
-    }
-  }, [employees, fromDate, toDate, selectedDepartment, selectedEmployee, generateAttendanceSheet])
-
-  // =====================================================
-  // Helper Functions (with useCallback where needed)
-  // =====================================================
-
-  const getDayName = useCallback((dateStr: string) => {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString('en-US', { weekday: 'long' })
-  }, [])
-
-  const formatTime = useCallback((timestamp: string) => {
-    if (!timestamp) return '-'
-    try {
-      const date = new Date(timestamp)
-      return date.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true 
-      })
-    } catch {
-      return '-'
-    }
-  }, [])
-
-  const formatDate = useCallback((dateStr: string) => {
-    if (!dateStr) return '-'
-    try {
-      const date = new Date(dateStr)
-      return date.toLocaleDateString('en-US', { 
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      })
-    } catch {
-      return '-'
-    }
-  }, [])
-
-  const calculateTotalHours = useCallback((checkIn: string, checkOut: string) => {
-    if (!checkIn || !checkOut) return '-'
-    try {
-      const inTime = new Date(checkIn)
-      const outTime = new Date(checkOut)
-      const diffMs = outTime.getTime() - inTime.getTime()
-      
-      if (diffMs < 0) return '-'
-      
-      // Calculate hours, minutes, seconds
-      const totalSeconds = Math.floor(diffMs / 1000)
-      const hours = Math.floor(totalSeconds / 3600)
-      const minutes = Math.floor((totalSeconds % 3600) / 60)
-      const seconds = totalSeconds % 60
-      
-      // Format as HH:MM:SS with leading zeros
-      const formattedHours = String(hours).padStart(2, '0')
-      const formattedMinutes = String(minutes).padStart(2, '0')
-      const formattedSeconds = String(seconds).padStart(2, '0')
-      
-      return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`
-    } catch {
-      return '-'
-    }
-  }, [])
-
-  const getQualificationsString = useCallback((qualifications: any[] = []) => {
-    if (!qualifications || qualifications.length === 0) return '-'
-    return qualifications.map(q => 
-      `${q.educationType} (${q.institute}, ${q.year}) - ${q.grade}`
-    ).join('; ')
-  }, [])
-
-  const getExperienceString = useCallback((experience: any[] = []) => {
-    if (!experience || experience.length === 0) return '-'
-    return experience.map(exp => 
-      `${exp.position} at ${exp.companyName} (${exp.experience} years)`
-    ).join('; ')
-  }, [])
-
-  // Helper function to check if location is a valid coordinate string
-  const isValidCoordinate = useCallback((location: string): boolean => {
-    if (!location || location === '-') return false
-    // Check if location contains coordinates format like "latitude, longitude"
-    const parts = location.split(',').map(s => s.trim())
-    if (parts.length !== 2) return false
-    const lat = parseFloat(parts[0])
-    const lng = parseFloat(parts[1])
-    return !isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180
-  }, [])
-
-  // Helper function to extract coordinates from location string
-  const parseCoordinates = useCallback((location: string): { lat: number; lng: number } | null => {
-    if (!location || location === '-') return null
-    const parts = location.split(',').map(s => s.trim())
-    if (parts.length !== 2) return null
-    const lat = parseFloat(parts[0])
-    const lng = parseFloat(parts[1])
-    if (isNaN(lat) || isNaN(lng)) return null
-    return { lat, lng }
-  }, [])
-
-  // Function to open Google Maps with coordinates
-  const openGoogleMaps = useCallback((location: string) => {
-    const coords = parseCoordinates(location)
-    if (!coords) {
-      // If not coordinates, try to search as address
-      const searchQuery = encodeURIComponent(location)
-      window.open(`https://www.google.com/maps/search/?api=1&query=${searchQuery}`, '_blank')
-      return
-    }
-    window.open(`https://www.google.com/maps?q=${coords.lat},${coords.lng}`, '_blank')
-  }, [parseCoordinates])
-
-  // Component for rendering clickable location
   const LocationDisplay = useCallback(({ location, label }: { location: string; label: string }) => {
     if (!location || location === '-') {
       return <span className="text-gray-400">-</span>
@@ -1557,93 +1592,51 @@ export default function GetSheetPage() {
     )
   }, [isValidCoordinate, openGoogleMaps])
 
-  const getEmployeeAttendance = useCallback((employee: Employee, date: string): AttendanceRecord => {
-    const dateStr = date
-    const checkIn = employee.checkIn?.find(c => c.time.split('T')[0] === dateStr)
-    const checkOut = employee.checkOut?.find(c => c.time.split('T')[0] === dateStr)
-    
-    // Check if employee is on leave
-    const leave = employee.leaves?.find(
-      l => l.fromDate <= dateStr && l.toDate >= dateStr && l.status === 'approved'
-    )
+  // =====================================================
+  // getSummary - WITH proper dependencies
+  // =====================================================
 
-    let status: 'Present' | 'Absent' | 'Leave' | 'Half Day' = 'Absent'
-    let leaveType = ''
-    let leaveReason = ''
+  const getSummary = useCallback(() => {
+    const total = filteredData.length
+    const present = filteredData.filter(r => r.status === 'Present').length
+    const absent = filteredData.filter(r => r.status === 'Absent').length
+    const leave = filteredData.filter(r => r.status === 'Leave').length
+    const halfDay = filteredData.filter(r => r.status === 'Half Day').length
 
-    if (leave) {
-      status = 'Leave'
-      leaveType = leave.leaveType || ''
-      leaveReason = leave.reason || ''
-    } else if (checkIn && checkOut) {
-      status = 'Present'
-    } else if (checkIn && !checkOut) {
-      status = 'Half Day'
-    }
+    return { total, present, absent, leave, halfDay }
+  }, [filteredData])
 
-    const personal = employee.personalDetails
+  // =====================================================
+  // handlePrint - WITH getSelectedEmployeeName dependency
+  // =====================================================
 
-    return {
-      employeeId: personal?.employeeId || '',
-      name: personal?.fullName || '',
-      fatherName: personal?.fatherName || '-',
-      cnic: personal?.cnic || '-',
-      phoneNumber: personal?.phoneNumber || '-',
-      emergencyContact: personal?.emergencyContact || '-',
-      dob: formatDate(personal?.dob || ''),
-      maritalStatus: personal?.maritalStatus || '-',
-      address: personal?.address || '-',
-      department: personal?.department || '',
-      designation: personal?.position || '',
-      joiningDate: formatDate(personal?.joiningDate || ''),
-      date: dateStr,
-      day: getDayName(dateStr),
-      checkIn: checkIn ? formatTime(checkIn.time) : '-',
-      checkOut: checkOut ? formatTime(checkOut.time) : '-',
-      totalHours: calculateTotalHours(checkIn?.time || '', checkOut?.time || ''),
-      checkInLocation: checkIn?.location || '-',
-      checkOutLocation: checkOut?.location || '-',
-      status,
-      leaveType,
-      leaveReason,
-      qualifications: getQualificationsString(employee.qualifications),
-      experience: getExperienceString(employee.experience)
-    }
-  }, [formatDate, getDayName, formatTime, calculateTotalHours, getQualificationsString, getExperienceString])
-
-  // Print functionality - Opens in new tab with PDF format matching the exact design
   const handlePrint = useCallback(() => {
-    // Get the current data
     const data = filteredData
     const employeeName = selectedEmployee === 'all' ? 'All Employees' : getSelectedEmployeeName()
     const deptName = selectedDepartment !== 'all' ? selectedDepartment : 'All Departments'
 
-    // Function to get row color based on check-in time
     const getRowColor = (checkInTime: string) => {
       if (!checkInTime || checkInTime === '-') return 'transparent'
       
       try {
-        // Parse the time string (format: "09:40 AM" or "10:00 AM")
         const timeStr = checkInTime.replace(/\s/g, '')
         const isPM = timeStr.includes('PM')
         let hours = parseInt(timeStr.split(':')[0])
         const minutes = parseInt(timeStr.split(':')[1]?.replace(/[AP]M/g, ''))
         
-        // Convert to 24-hour format
         if (isPM && hours !== 12) hours += 12
         if (!isPM && hours === 12) hours = 0
         
         const totalMinutes = hours * 60 + (minutes || 0)
         
-        // Color coding based on time ranges
         if (totalMinutes < 600) {
-          return '#4A90D9' // Blue - Before 10:00 AM (including 9:40 AM and earlier)
+          return '#4A90D9'
         } else if (totalMinutes >= 600 && totalMinutes < 630) {
-          return '#27AE60' // Green - 10:00 AM to 10:30 AM
+          return '#27AE60'
         } else if (totalMinutes >= 630 && totalMinutes < 690) {
-          return '#F1C40F' // Yellow - 10:30 AM to 11:30 AM
+          return '#F1C40F'
         } else if (totalMinutes >= 690) {
-          return '#E74C3C' // Red - 11:30 AM and onwards (including 12:00 PM and after)
+          return '#E74C3C'
         }
         
         return 'transparent'
@@ -1652,18 +1645,13 @@ export default function GetSheetPage() {
       }
     }
 
-    // Create print content with exact format matching the PDF design
     let tableRows = ''
     data.forEach((record, index) => {
-      // Check if the day is Sunday
       const isSunday = record.day === 'Sunday'
-      // Get row color based on check-in time (only if not Sunday)
       const checkInColor = !isSunday ? getRowColor(record.checkIn) : 'transparent'
-      // If Sunday, use light red, otherwise use check-in color
       const rowBgColor = isSunday ? '#FFCCCC' : (checkInColor || 'transparent')
       
       if (isSunday) {
-        // Sunday row - only show "Sunday" in Day column, everything else empty
         tableRows += `
           <tr style="background-color: ${rowBgColor};">
             <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;"></td>
@@ -1682,7 +1670,6 @@ export default function GetSheetPage() {
           </tr>
         `
       } else {
-        // Normal row - show all data with color based on check-in time
         tableRows += `
           <tr style="background-color: ${rowBgColor};">
             <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;">${index + 1}</td>
@@ -1703,7 +1690,6 @@ export default function GetSheetPage() {
       }
     })
 
-    // Create HTML for print with exact PDF format matching the design
     const printHTML = `
       <!DOCTYPE html>
       <html>
@@ -1714,13 +1700,11 @@ export default function GetSheetPage() {
               size: A4 landscape;
               margin: 10mm 8mm;
             }
-            
             * {
               box-sizing: border-box;
               margin: 0;
               padding: 0;
             }
-            
             body {
               font-family: Arial, Helvetica, sans-serif;
               background: white;
@@ -1728,19 +1712,16 @@ export default function GetSheetPage() {
               padding: 0;
               margin: 0;
             }
-            
             .print-container {
               width: 100%;
               padding: 0;
             }
-            
             .print-header {
               text-align: center;
               margin-bottom: 10px;
               padding-bottom: 8px;
               border-bottom: 2px solid #000000;
             }
-            
             .print-header .company-name {
               font-size: 14px;
               font-weight: 700;
@@ -1748,7 +1729,6 @@ export default function GetSheetPage() {
               letter-spacing: 0.5px;
               text-transform: uppercase;
             }
-            
             .print-header .title {
               font-size: 12px;
               font-weight: 700;
@@ -1756,28 +1736,24 @@ export default function GetSheetPage() {
               margin-top: 2px;
               letter-spacing: 0.5px;
             }
-            
             .print-header .sub-info {
               font-size: 9px;
               color: #000000;
               margin-top: 4px;
               font-weight: 500;
             }
-            
             .print-header .date-range {
               font-size: 9px;
               color: #000000;
               margin-top: 2px;
               font-weight: 400;
             }
-            
             table {
               width: 100%;
               border-collapse: collapse;
               font-size: 8px;
               margin-top: 2px;
             }
-            
             table thead th {
               background: #C4BD97;
               font-weight: 700;
@@ -1790,7 +1766,6 @@ export default function GetSheetPage() {
               color: #000000;
               white-space: nowrap;
             }
-            
             table tbody td {
               padding: 4px 6px;
               border: 1px solid #000000;
@@ -1799,7 +1774,6 @@ export default function GetSheetPage() {
               text-align: center;
               font-size: 8px;
             }
-            
             .print-footer {
               margin-top: 12px;
               padding-top: 8px;
@@ -1809,11 +1783,9 @@ export default function GetSheetPage() {
               color: #000000;
               letter-spacing: 0.3px;
             }
-            
             .print-footer .footer-text {
               font-weight: 400;
             }
-            
             @media print {
               body { 
                 padding: 0; 
@@ -1836,8 +1808,6 @@ export default function GetSheetPage() {
         </head>
         <body>
           <div class="print-container">
-            
-            <!-- Table -->
             <table>
               <thead>
                 <tr>
@@ -1860,15 +1830,11 @@ export default function GetSheetPage() {
                 ${tableRows}
               </tbody>
             </table>
-            
-            <!-- Footer -->
             <div class="print-footer">
               <span class="footer-text">This sheet is generated by system software | A to Zee Switchgear Engineering (SMC) Pvt. Ltd.</span>
             </div>
           </div>
-          
           <script>
-            // Auto-print when page loads
             window.onload = function() {
               setTimeout(function() {
                 window.print();
@@ -1879,7 +1845,6 @@ export default function GetSheetPage() {
       </html>
     `
 
-    // Open in a new tab
     const printWindow = window.open('', '_blank')
     if (!printWindow) {
       alert('Please allow popups for printing')
@@ -1888,29 +1853,33 @@ export default function GetSheetPage() {
 
     printWindow.document.write(printHTML)
     printWindow.document.close()
-  }, [filteredData, selectedEmployee, selectedDepartment])
+  }, [filteredData, selectedEmployee, selectedDepartment, getSelectedEmployeeName]) // Added getSelectedEmployeeName
 
-  // Calculate summary statistics
-  const getSummary = useCallback(() => {
-    const total = filteredData.length
-    const present = filteredData.filter(r => r.status === 'Present').length
-    const absent = filteredData.filter(r => r.status === 'Absent').length
-    const leave = filteredData.filter(r => r.status === 'Leave').length
-    const halfDay = filteredData.filter(r => r.status === 'Half Day').length
+  // =====================================================
+  // USE EFFECTS
+  // =====================================================
 
-    return { total, present, absent, leave, halfDay }
-  }, [filteredData])
+  useEffect(() => {
+    fetchEmployees()
+    const now = new Date()
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    setFromDate(firstDay.toISOString().split('T')[0])
+    setToDate(lastDay.toISOString().split('T')[0])
+  }, [fetchEmployees])
+
+  useEffect(() => {
+    if (employees.length > 0 && fromDate && toDate) {
+      generateAttendanceSheet()
+    }
+  }, [employees, fromDate, toDate, selectedDepartment, selectedEmployee, generateAttendanceSheet])
+
+  // =====================================================
+  // Component Render
+  // =====================================================
 
   const summary = getSummary()
 
-  // Get selected employee name for display
-  const getSelectedEmployeeName = useCallback(() => {
-    if (selectedEmployee === 'all') return 'All Employees'
-    const emp = employees.find(e => e.personalDetails?.employeeId === selectedEmployee)
-    return emp?.personalDetails?.fullName || 'Selected Employee'
-  }, [employees, selectedEmployee])
-
-  // Filter employees for search
   const filteredEmployees = employeeNames.filter(emp => 
     emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     emp.id.toLowerCase().includes(searchTerm.toLowerCase())
